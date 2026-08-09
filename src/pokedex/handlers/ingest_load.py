@@ -12,16 +12,29 @@ from pokedex.db.client import get_connection
 LOGGER = logging.getLogger()
 LOGGER.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
+_SAFE_COLUMNS = {
+    ("v1", "titan"): ("text_v1", "emb_v1_titan"),
+    ("v2", "titan"): ("text_v2", "emb_v2_titan"),
+    ("v3", "titan"): ("text_v3", "emb_v3_titan"),
+    ("v4", "titan"): ("text_v4", "emb_v4_titan"),
+    ("v1", "minilm"): ("text_v1", "emb_v1_minilm"),
+    ("v2", "minilm"): ("text_v2", "emb_v2_minilm"),
+    ("v3", "minilm"): ("text_v3", "emb_v3_minilm"),
+    ("v4", "minilm"): ("text_v4", "emb_v4_minilm"),
+}
+
 
 def _vector_literal(vector: list[float]) -> str:
     return "[" + ",".join(f"{float(v):.8f}" for v in vector) + "]"
 
 
-def _upsert_record(cur, item: dict[str, Any], strategy: str) -> None:
+def _upsert_record(cur, item: dict[str, Any], strategy: str, model: str) -> None:
+    if (strategy, model) not in _SAFE_COLUMNS:
+        raise ValueError(f"Unsupported strategy/model combination: {strategy}/{model}")
+
     pokemon = item["pokemon"]
-    vector = item.get("embedding_titan", [])
-    text_field = f"text_{strategy}"
-    emb_field = f"emb_{strategy}_titan"
+    vector = item.get(f"embedding_{model}", [])
+    text_field, emb_field = _SAFE_COLUMNS[(strategy, model)]
 
     sql = f"""
     INSERT INTO pokemon (id, name, generation, types, tier, stats, metadata, {text_field}, {emb_field})
@@ -71,13 +84,16 @@ def handler(event: dict, context: Any) -> dict:
             return _save_eval_to_s3(event)
 
         strategy = event.get("strategy")
+        model = event.get("model", "titan")
+        if not strategy:
+            raise ValueError("strategy is required for ingest load events")
         embedded = event.get("embedded", [])
         with get_connection() as conn:
             with conn.cursor() as cur:
                 for item in embedded:
-                    _upsert_record(cur, item, strategy=strategy)
+                    _upsert_record(cur, item, strategy=strategy, model=model)
 
-        return {"loaded": len(embedded), "strategy": strategy}
+        return {"loaded": len(embedded), "strategy": strategy, "model": model}
     except Exception as exc:  # noqa: BLE001
         LOGGER.exception("ingest_load_failed", extra={"error": str(exc)})
         raise

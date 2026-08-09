@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+MINILM_DIMENSIONS = 384
 _MINILM_MODEL: Any = None
 
 
@@ -21,6 +22,6 @@ def embed(text: str) -> list[float]:
         raise ValueError("Text for embedding must be non-empty")
     vector = _model().encode(text, normalize_embeddings=True)
     vector_list = vector.tolist() if hasattr(vector, "tolist") else list(vector)
-    if len(vector_list) != 384:
+    if len(vector_list) != MINILM_DIMENSIONS:
         raise ValueError("MiniLM embedding response does not contain a 384-d vector")
     return [float(v) for v in vector_list]

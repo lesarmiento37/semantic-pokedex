@@ -8,7 +8,7 @@ from typing import Any
 
 from pokedex.db.client import get_connection
 from pokedex.embeddings.titan import embed
-from pokedex.search.engine import build_search_sql
+from pokedex.search.engine import QUERY_VECTOR_SENTINEL, build_search_sql
 
 LOGGER = logging.getLogger()
 LOGGER.setLevel(os.getenv("LOG_LEVEL", "INFO"))
@@ -33,6 +33,7 @@ def handler(event: dict, context: Any) -> dict:
 
         latencies_ms: list[float] = []
         hits = 0
+        reciprocal_ranks: list[float] = []
 
         with get_connection() as conn:
             with conn.cursor() as cur:
@@ -46,9 +47,10 @@ def handler(event: dict, context: Any) -> dict:
                         top_k=top_k,
                         ef_search=ef_search,
                     )
-                    params[-3] = q_embedding
-                    params[-2] = q_embedding
-                    cur.execute(sql, params)
+                    params = [q_embedding if p == QUERY_VECTOR_SENTINEL else p for p in params]
+                    set_sql, select_sql = sql.split(";\n", maxsplit=1)
+                    cur.execute(set_sql)
+                    cur.execute(select_sql, params)
                     rows = cur.fetchall()
                     latency_ms = (time.perf_counter() - started) * 1000
                     latencies_ms.append(latency_ms)
@@ -58,12 +60,20 @@ def handler(event: dict, context: Any) -> dict:
                     if expected.intersection(found):
                         hits += 1
 
+                    if expected:
+                        reciprocal_rank = 0.0
+                        for rank, row in enumerate(rows[:top_k], start=1):
+                            if row[1] in expected:
+                                reciprocal_rank = 1.0 / rank
+                                break
+                        reciprocal_ranks.append(reciprocal_rank)
+
         recall = hits / len(queries) if queries else 0.0
         return {
             "experiment": experiment,
             "metrics": {
                 "recall_at_k": recall,
-                "mrr_at_k": 0.0,
+                "mrr_at_k": (sum(reciprocal_ranks) / len(reciprocal_ranks)) if reciprocal_ranks else 0.0,
                 "p50_latency_ms": median(latencies_ms) if latencies_ms else 0.0,
             },
         }

@@ -3,9 +3,10 @@ from __future__ import annotations
 import re
 from typing import Any
 
-_ALLOWED_STRATEGIES = {"v1": "v1", "v2": "v2", "v3": "v3", "v4": "v4"}
-_ALLOWED_MODELS = {"titan": "titan", "minilm": "minilm"}
+_ALLOWED_STRATEGIES = {"v1", "v2", "v3", "v4"}
+_ALLOWED_MODELS = {"titan", "minilm"}
 _IDENTIFIER_RE = re.compile(r"^[a-z0-9_]+$")
+QUERY_VECTOR_SENTINEL = "__QUERY_VECTOR__"
 
 
 def _validate_strategy_model(strategy: str, model: str) -> str:
@@ -65,5 +66,5 @@ def build_search_sql(
         f"LIMIT %s"
     )
 
-    params.extend([None, None, int(top_k)])
+    params.extend([QUERY_VECTOR_SENTINEL, QUERY_VECTOR_SENTINEL, int(top_k)])
     return sql, params

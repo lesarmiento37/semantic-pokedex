@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from datetime import datetime, timezone
 from typing import Any
 
 import boto3
@@ -37,6 +38,9 @@ def handler(event: dict, context: Any) -> dict:
         strategy_name = event.get("strategy", "v1")
         records = event.get("records", [])
 
+        if strategy_name not in STRATEGY_REGISTRY:
+            raise ValueError(f"Unsupported strategy '{strategy_name}'. Expected one of: v1, v2, v3, v4")
+
         strategy_class = STRATEGY_REGISTRY[strategy_name]
         strategy = strategy_class()
 
@@ -54,7 +58,8 @@ def handler(event: dict, context: Any) -> dict:
 
         bucket = os.getenv("S3_CURATED_BUCKET")
         if bucket:
-            key = f"pokemon/curated/{strategy_name}.json"
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            key = f"pokemon/curated/{strategy_name}/{timestamp}.json"
             boto3.client("s3").put_object(Bucket=bucket, Key=key, Body=json.dumps(represented).encode("utf-8"))
 
         return {"strategy": strategy_name, "represented": represented}

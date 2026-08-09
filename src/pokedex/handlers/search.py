@@ -7,7 +7,7 @@ from typing import Any
 
 from pokedex.db.client import get_connection
 from pokedex.embeddings.titan import embed
-from pokedex.search.engine import build_search_sql
+from pokedex.search.engine import QUERY_VECTOR_SENTINEL, build_search_sql
 
 LOGGER = logging.getLogger()
 LOGGER.setLevel(os.getenv("LOG_LEVEL", "INFO"))
@@ -49,12 +49,13 @@ def handler(event: dict, context: Any) -> dict:
             top_k=top_k,
             ef_search=ef_search,
         )
-        params[-3] = query_vector
-        params[-2] = query_vector
+        params = [query_vector if p == QUERY_VECTOR_SENTINEL else p for p in params]
+        set_sql, select_sql = sql.split(";\n", maxsplit=1)
 
         with get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute(sql, params)
+                cur.execute(set_sql)
+                cur.execute(select_sql, params)
                 rows = cur.fetchall()
 
         results = [

@@ -16,14 +16,16 @@ def handler(event: dict, context: Any) -> dict:
 
     try:
         represented = event.get("represented", [])
+        model = event.get("model", "titan")
+        embedding_key = f"embedding_{model}"
         texts = [entry["text"] for entry in represented]
         vectors = embed_batch(texts)
 
         enriched = []
         for entry, vector in zip(represented, vectors, strict=True):
-            enriched.append({**entry, "embedding_titan": vector})
+            enriched.append({**entry, embedding_key: vector})
 
-        return {"strategy": event.get("strategy"), "embedded": enriched}
+        return {"strategy": event.get("strategy"), "model": model, "embedded": enriched}
     except Exception as exc:  # noqa: BLE001
         LOGGER.exception("ingest_embed_failed", extra={"error": str(exc)})
         raise

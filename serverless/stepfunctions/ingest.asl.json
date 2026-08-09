@@ -28,28 +28,7 @@
       "Next": "EnrichSmogon"
     },
     "EnrichSmogon": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke",
-      "Parameters": {
-        "FunctionName": "${self:service}-${sls:stage}-ingestRepresent",
-        "Payload.$": "$"
-      },
-      "OutputPath": "$.Payload",
-      "Retry": [
-        {
-          "ErrorEquals": ["States.ALL"],
-          "IntervalSeconds": 2,
-          "BackoffRate": 2,
-          "MaxAttempts": 3
-        }
-      ],
-      "Catch": [
-        {
-          "ErrorEquals": ["States.ALL"],
-          "ResultPath": "$.error",
-          "Next": "FailState"
-        }
-      ],
+      "Type": "Pass",
       "Next": "RepresentAndEmbed"
     },
     "RepresentAndEmbed": {
