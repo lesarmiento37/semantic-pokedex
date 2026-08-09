@@ -1,0 +1,64 @@
+service: semantic-pokedex
+frameworkVersion: '3.35.2'
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: us-west-2
+  stage: ${opt:stage, 'dev'}
+  memorySize: 512
+  timeout: 30
+  logRetentionInDays: 14
+  environment:
+    LOG_LEVEL: ${env:LOG_LEVEL, 'INFO'}
+    DB_SECRET_ARN: ${env:DB_SECRET_ARN}
+    S3_RAW_BUCKET: ${env:S3_RAW_BUCKET}
+    S3_CURATED_BUCKET: ${env:S3_CURATED_BUCKET}
+    S3_EVAL_BUCKET: ${env:S3_EVAL_BUCKET}
+    BEDROCK_REGION: ${env:BEDROCK_REGION, 'us-west-2'}
+  vpc:
+    securityGroupIds:
+      - ${env:LAMBDA_SG_ID}
+    subnetIds: ${file(./variables.js):subnetIds}
+
+plugins:
+  - serverless-step-functions
+  - serverless-python-requirements
+  - serverless-iam-roles-per-function
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    slim: true
+    fileName: requirements-lambda.txt
+
+package:
+  individually: true
+  patterns:
+    - '!**'
+    - '../src/**'
+    - '../evals/**'
+    - '!../tests/**'
+
+functions:
+  ingestFetch: ${file(functions/ingest-fetch.yml)}
+  ingestRepresent: ${file(functions/ingest-represent.yml)}
+  ingestEmbed: ${file(functions/ingest-embed.yml)}
+  ingestLoad: ${file(functions/ingest-load.yml)}
+  evalRunQueries: ${file(functions/eval-run-queries.yml)}
+  evalAggregate: ${file(functions/eval-aggregate.yml)}
+  search: ${file(functions/search.yml)}
+
+stepFunctions:
+  stateMachines:
+    ingest:
+      name: ${self:service}-${sls:stage}-ingest
+      definition: ${file(stepfunctions/ingest.asl.json)}
+    eval:
+      name: ${self:service}-${sls:stage}-eval
+      definition: ${file(stepfunctions/eval.asl.json)}
+
+resources:
+  - ${file(resources/iam.yml)}
+  - ${file(resources/s3.yml)}
+  - ${file(resources/secrets.yml)}

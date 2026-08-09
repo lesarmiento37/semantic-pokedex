@@ -1,0 +1,45 @@
+# Add at least 25 more labeled queries to reach 30 total for robust evaluation.
+#
+# Suggested methodology:
+# - Define realistic user intents using competitive language.
+# - Add optional metadata constraints when query implies them.
+# - Provide expected_top_k labels curated manually.
+# - Keep IDs stable for reproducibility in metrics reports.
+
+queries:
+  - id: q001
+    text: "water tank that resists fairies and can set hazards"
+    filters:
+      generation: [2]
+      types: ["Water"]
+    expected_top_k:
+      - Swampert
+      - Empoleon
+  - id: q002
+    text: "fast special sweeper with strong electric pressure"
+    filters:
+      generation: [1, 2]
+    expected_top_k:
+      - Jolteon
+      - Raikou
+  - id: q003
+    text: "bulky wall with recovery and hazard utility"
+    filters:
+      tier: ["OU", "UU"]
+    expected_top_k:
+      - Skarmory
+      - Forretress
+  - id: q004
+    text: "physical pivot that can force switches"
+    filters:
+      generation: [2]
+    expected_top_k:
+      - Tyranitar
+      - Heracross
+  - id: q005
+    text: "ground immune support pivot that can spread status"
+    filters:
+      generation: [1, 2]
+    expected_top_k:
+      - Gengar
+      - Crobat

@@ -1,0 +1,174 @@
+{
+  "Comment": "Ingest Pokémon data and generate strategy-specific embeddings",
+  "StartAt": "FetchPokeAPI",
+  "States": {
+    "FetchPokeAPI": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${self:service}-${sls:stage}-ingestFetch",
+        "Payload.$": "$"
+      },
+      "OutputPath": "$.Payload",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 2,
+          "BackoffRate": 2,
+          "MaxAttempts": 3
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "FailState"
+        }
+      ],
+      "Next": "EnrichSmogon"
+    },
+    "EnrichSmogon": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${self:service}-${sls:stage}-ingestRepresent",
+        "Payload.$": "$"
+      },
+      "OutputPath": "$.Payload",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 2,
+          "BackoffRate": 2,
+          "MaxAttempts": 3
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "FailState"
+        }
+      ],
+      "Next": "RepresentAndEmbed"
+    },
+    "RepresentAndEmbed": {
+      "Type": "Map",
+      "ItemsPath": "$.strategies",
+      "MaxConcurrency": 2,
+      "Parameters": {
+        "strategy.$": "$$.Map.Item.Value",
+        "records.$": "$.records"
+      },
+      "Iterator": {
+        "StartAt": "Represent",
+        "States": {
+          "Represent": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${self:service}-${sls:stage}-ingestRepresent",
+              "Payload.$": "$"
+            },
+            "OutputPath": "$.Payload",
+            "Retry": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "IntervalSeconds": 2,
+                "BackoffRate": 2,
+                "MaxAttempts": 3
+              }
+            ],
+            "Catch": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "ResultPath": "$.error",
+                "Next": "MapFail"
+              }
+            ],
+            "Next": "Embed"
+          },
+          "Embed": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${self:service}-${sls:stage}-ingestEmbed",
+              "Payload.$": "$"
+            },
+            "OutputPath": "$.Payload",
+            "Retry": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "IntervalSeconds": 2,
+                "BackoffRate": 2,
+                "MaxAttempts": 3
+              }
+            ],
+            "Catch": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "ResultPath": "$.error",
+                "Next": "MapFail"
+              }
+            ],
+            "Next": "Load"
+          },
+          "Load": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${self:service}-${sls:stage}-ingestLoad",
+              "Payload.$": "$"
+            },
+            "OutputPath": "$.Payload",
+            "Retry": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "IntervalSeconds": 2,
+                "BackoffRate": 2,
+                "MaxAttempts": 3
+              }
+            ],
+            "Catch": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "ResultPath": "$.error",
+                "Next": "MapFail"
+              }
+            ],
+            "End": true
+          },
+          "MapFail": {
+            "Type": "Fail",
+            "Error": "MapProcessingError",
+            "Cause": "Representation or embedding map item failed"
+          }
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 2,
+          "BackoffRate": 2,
+          "MaxAttempts": 3
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "FailState"
+        }
+      ],
+      "Next": "Done"
+    },
+    "Done": {
+      "Type": "Succeed"
+    },
+    "FailState": {
+      "Type": "Fail",
+      "Error": "IngestStateMachineFailed",
+      "Cause": "Unhandled ingest failure"
+    }
+  }
+}

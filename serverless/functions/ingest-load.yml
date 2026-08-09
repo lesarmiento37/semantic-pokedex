@@ -1,0 +1,19 @@
+handler: src/pokedex/handlers/ingest_load.handler
+description: Upsert represented records into PostgreSQL
+package:
+  patterns:
+    - ../src/pokedex/handlers/ingest_load.py
+    - ../src/pokedex/db/**/*.py
+    - ../src/pokedex/**/*.py
+iamRoleStatements:
+  - Effect: Allow
+    Action:
+      - secretsmanager:GetSecretValue
+    Resource:
+      - ${env:DB_SECRET_ARN}
+  - Effect: Allow
+    Action:
+      - logs:CreateLogGroup
+      - logs:CreateLogStream
+      - logs:PutLogEvents
+    Resource: "*"

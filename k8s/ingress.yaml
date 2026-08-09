@@ -1,0 +1,49 @@
+# Choose one ingress style depending on your cluster setup.
+#
+# - Use the ALB example if AWS Load Balancer Controller is installed.
+# - Use the Nginx example if ingress-nginx is installed.
+# - Keep only one active Ingress object to avoid routing conflicts.
+
+# --- ALB Controller example ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: semantic-pokedex-streamlit-alb
+#   namespace: semantic-pokedex
+#   annotations:
+#     kubernetes.io/ingress.class: alb
+#     alb.ingress.kubernetes.io/scheme: internet-facing
+#     alb.ingress.kubernetes.io/target-type: ip
+# spec:
+#   rules:
+#     - host: semantic-pokedex.example.com
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: semantic-pokedex-streamlit
+#                 port:
+#                   number: 80
+
+# --- Nginx Ingress example ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: semantic-pokedex-streamlit-nginx
+#   namespace: semantic-pokedex
+#   annotations:
+#     kubernetes.io/ingress.class: nginx
+# spec:
+#   rules:
+#     - host: semantic-pokedex.example.com
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: semantic-pokedex-streamlit
+#                 port:
+#                   number: 80

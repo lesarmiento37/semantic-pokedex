@@ -1,0 +1,11 @@
+{
+  "name": "semantic-pokedex-serverless",
+  "private": true,
+  "engines": { "node": ">=18 <21" },
+  "devDependencies": {
+    "serverless": "3.35.2",
+    "serverless-step-functions": "^3.21.0",
+    "serverless-python-requirements": "^6.1.1",
+    "serverless-iam-roles-per-function": "^3.2.0"
+  }
+}

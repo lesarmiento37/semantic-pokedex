@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: semantic-pokedex-streamlit
+  namespace: semantic-pokedex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: semantic-pokedex-streamlit
+  template:
+    metadata:
+      labels:
+        app: semantic-pokedex-streamlit
+    spec:
+      serviceAccountName: streamlit
+      containers:
+        - name: streamlit
+          image: ACCOUNT_ID.dkr.ecr.us-west-2.amazonaws.com/semantic-pokedex-streamlit:latest
+          ports:
+            - containerPort: 8501
+          envFrom:
+            - configMapRef:
+                name: semantic-pokedex-streamlit-config
+            - secretRef:
+                name: semantic-pokedex-streamlit-secret
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
