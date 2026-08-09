@@ -1,0 +1,21 @@
+handler: src/pokedex/handlers/eval_run.handler
+description: Execute evaluation query shard
+package:
+  patterns:
+    - ../src/pokedex/handlers/eval_run.py
+    - ../src/pokedex/search/**/*.py
+    - ../src/pokedex/db/**/*.py
+    - ../src/pokedex/**/*.py
+    - ../evals/queries.yaml
+iamRoleStatements:
+  - Effect: Allow
+    Action:
+      - secretsmanager:GetSecretValue
+    Resource:
+      - ${env:DB_SECRET_ARN}
+  - Effect: Allow
+    Action:
+      - logs:CreateLogGroup
+      - logs:CreateLogStream
+      - logs:PutLogEvents
+    Resource: "*"

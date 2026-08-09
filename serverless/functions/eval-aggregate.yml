@@ -1,0 +1,18 @@
+handler: src/pokedex/handlers/eval_aggregate.handler
+description: Aggregate evaluation metrics and artifacts
+package:
+  patterns:
+    - ../src/pokedex/handlers/eval_aggregate.py
+    - ../src/pokedex/**/*.py
+iamRoleStatements:
+  - Effect: Allow
+    Action:
+      - s3:PutObject
+    Resource:
+      - arn:aws:s3:::${env:S3_EVAL_BUCKET}/*
+  - Effect: Allow
+    Action:
+      - logs:CreateLogGroup
+      - logs:CreateLogStream
+      - logs:PutLogEvents
+    Resource: "*"

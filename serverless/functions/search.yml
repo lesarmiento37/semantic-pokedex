@@ -1,0 +1,30 @@
+handler: src/pokedex/handlers/search.handler
+description: Semantic query endpoint for Pokémon search
+package:
+  patterns:
+    - ../src/pokedex/handlers/search.py
+    - ../src/pokedex/search/**/*.py
+    - ../src/pokedex/db/**/*.py
+    - ../src/pokedex/embeddings/**/*.py
+    - ../src/pokedex/**/*.py
+events:
+  - httpApi:
+      path: /search
+      method: post
+iamRoleStatements:
+  - Effect: Allow
+    Action:
+      - bedrock:InvokeModel
+    Resource:
+      - arn:aws:bedrock:${env:BEDROCK_REGION}:*:foundation-model/amazon.titan-embed-text-v2:0
+  - Effect: Allow
+    Action:
+      - secretsmanager:GetSecretValue
+    Resource:
+      - ${env:DB_SECRET_ARN}
+  - Effect: Allow
+    Action:
+      - logs:CreateLogGroup
+      - logs:CreateLogStream
+      - logs:PutLogEvents
+    Resource: "*"

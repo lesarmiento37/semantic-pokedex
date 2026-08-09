@@ -1,0 +1,19 @@
+handler: src/pokedex/handlers/ingest_embed.handler
+description: Generate embeddings for representation text
+package:
+  patterns:
+    - ../src/pokedex/handlers/ingest_embed.py
+    - ../src/pokedex/embeddings/**/*.py
+    - ../src/pokedex/**/*.py
+iamRoleStatements:
+  - Effect: Allow
+    Action:
+      - bedrock:InvokeModel
+    Resource:
+      - arn:aws:bedrock:${env:BEDROCK_REGION}:*:foundation-model/amazon.titan-embed-text-v2:0
+  - Effect: Allow
+    Action:
+      - logs:CreateLogGroup
+      - logs:CreateLogStream
+      - logs:PutLogEvents
+    Resource: "*"

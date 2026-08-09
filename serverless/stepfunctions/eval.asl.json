@@ -1,0 +1,109 @@
+{
+  "Comment": "Evaluate strategy, ef_search, and top_k combinations",
+  "StartAt": "FanOut",
+  "States": {
+    "FanOut": {
+      "Type": "Map",
+      "ItemsPath": "$.experiments",
+      "MaxConcurrency": 5,
+      "Parameters": {
+        "experiment.$": "$$.Map.Item.Value",
+        "queries.$": "$.queries"
+      },
+      "Iterator": {
+        "StartAt": "RunQueries",
+        "States": {
+          "RunQueries": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${self:service}-${sls:stage}-evalRunQueries",
+              "Payload.$": "$"
+            },
+            "OutputPath": "$.Payload",
+            "Retry": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "IntervalSeconds": 2,
+                "BackoffRate": 2,
+                "MaxAttempts": 3
+              }
+            ],
+            "Catch": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "ResultPath": "$.error",
+                "Next": "RunFail"
+              }
+            ],
+            "End": true
+          },
+          "RunFail": {
+            "Type": "Fail",
+            "Error": "EvalRunFailed",
+            "Cause": "One experiment shard failed"
+          }
+        }
+      },
+      "Next": "Aggregate"
+    },
+    "Aggregate": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${self:service}-${sls:stage}-evalAggregate",
+        "Payload.$": "$"
+      },
+      "OutputPath": "$.Payload",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 2,
+          "BackoffRate": 2,
+          "MaxAttempts": 3
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "FailState"
+        }
+      ],
+      "Next": "SaveResultsInS3"
+    },
+    "SaveResultsInS3": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${self:service}-${sls:stage}-ingestLoad",
+        "Payload.$": "$"
+      },
+      "OutputPath": "$.Payload",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 2,
+          "BackoffRate": 2,
+          "MaxAttempts": 3
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "FailState"
+        }
+      ],
+      "Next": "Done"
+    },
+    "Done": {
+      "Type": "Succeed"
+    },
+    "FailState": {
+      "Type": "Fail",
+      "Error": "EvalStateMachineFailed",
+      "Cause": "Unhandled eval failure"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+Resources:
+  RawDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${env:S3_RAW_BUCKET}
+      VersioningConfiguration:
+        Status: Enabled
+
+  CuratedDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${env:S3_CURATED_BUCKET}
+      VersioningConfiguration:
+        Status: Enabled
+
+  EvalDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${env:S3_EVAL_BUCKET}
+      VersioningConfiguration:
+        Status: Enabled

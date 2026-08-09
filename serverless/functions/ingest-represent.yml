@@ -1,0 +1,19 @@
+handler: src/pokedex/handlers/ingest_represent.handler
+description: Build representation text for strategy versions
+package:
+  patterns:
+    - ../src/pokedex/handlers/ingest_represent.py
+    - ../src/pokedex/representations/**/*.py
+    - ../src/pokedex/**/*.py
+iamRoleStatements:
+  - Effect: Allow
+    Action:
+      - s3:PutObject
+    Resource:
+      - arn:aws:s3:::${env:S3_CURATED_BUCKET}/*
+  - Effect: Allow
+    Action:
+      - logs:CreateLogGroup
+      - logs:CreateLogStream
+      - logs:PutLogEvents
+    Resource: "*"

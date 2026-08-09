@@ -1,0 +1,19 @@
+handler: src/pokedex/handlers/ingest_fetch.handler
+description: Fetch Pokémon payloads from source APIs
+package:
+  patterns:
+    - ../src/pokedex/handlers/ingest_fetch.py
+    - ../src/pokedex/**/*.py
+iamRoleStatements:
+  - Effect: Allow
+    Action:
+      - s3:PutObject
+      - s3:PutObjectTagging
+    Resource:
+      - arn:aws:s3:::${env:S3_RAW_BUCKET}/*
+  - Effect: Allow
+    Action:
+      - logs:CreateLogGroup
+      - logs:CreateLogStream
+      - logs:PutLogEvents
+    Resource: "*"

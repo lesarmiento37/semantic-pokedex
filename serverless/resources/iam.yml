@@ -1,0 +1,12 @@
+Resources:
+  IngestStateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/vendedlogs/states/${self:service}-${sls:stage}-ingest
+      RetentionInDays: 14
+
+  EvalStateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/vendedlogs/states/${self:service}-${sls:stage}-eval
+      RetentionInDays: 14
