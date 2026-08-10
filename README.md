@@ -128,3 +128,56 @@ A later PR should define and validate a controlled deployment process.
 ## License
 
 MIT (add license file in a follow-up PR if needed).
+
+## Despliegue manual con Docker
+
+Puedes desplegar la aplicación desde tu máquina local usando Docker, sin necesitar acceso al pipeline de GitHub Actions.
+
+### Requisitos previos
+
+- Docker instalado y en ejecución.
+- Credenciales temporales de AWS (ver abajo).
+
+### 1. Obtener credenciales temporales desde el AWS Access Portal
+
+1. Inicia sesión en tu AWS Access Portal (p. ej. `https://<alias>.awsapps.com/start`).
+2. Haz clic en la cuenta y rol que quieres usar.
+3. Selecciona **"Command line or programmatic access"**.
+4. Copia los tres valores del bloque **"Option 1 – Set AWS environment variables"**.
+
+### 2. Exportar las credenciales en tu terminal
+
+```bash
+export AWS_ACCESS_KEY_ID=ASIA...
+export AWS_SECRET_ACCESS_KEY=...
+export AWS_SESSION_TOKEN=...
+```
+
+> ⚠️ **Seguridad:** estas variables son de sesión temporal y expiran automáticamente.
+> **No las commits en ningún archivo del repositorio.**
+
+### 3. Ejecutar el despliegue
+
+```bash
+./run-deploy.sh
+```
+
+El script construye la imagen Docker y lanza el contenedor, que a su vez:
+
+1. Valida las credenciales con `aws sts get-caller-identity`.
+2. Ejecuta `serverless deploy --stage stage --region us-east-1 --verbose --force`.
+
+### Overrides opcionales
+
+```bash
+# Desplegar en otro stage o región
+STAGE=dev AWS_REGION=us-east-1 ./run-deploy.sh
+```
+
+### Permisos de los scripts
+
+Si los scripts no son ejecutables en tu máquina, corre:
+
+```bash
+chmod +x deploy.sh run-deploy.sh
+```

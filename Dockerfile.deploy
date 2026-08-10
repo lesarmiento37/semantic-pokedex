@@ -1,0 +1,40 @@
+FROM node:18-bullseye-slim
+
+# Install system dependencies, Python 3.11, pip, and AWS CLI
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 \
+    python3.11-dev \
+    python3-pip \
+    build-essential \
+    git \
+    zip \
+    unzip \
+    curl \
+    ca-certificates \
+    && pip3 install --no-cache-dir awscli \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Serverless Framework globally
+RUN npm install -g serverless@3.35.2 \
+    && npm cache clean --force
+
+# Create app directory
+WORKDIR /app
+
+# Pre-install Serverless plugins to speed up successive builds
+RUN serverless plugin install -n serverless-dotenv-plugin \
+    && serverless plugin install -n serverless-python-requirements \
+    && serverless plugin install -n serverless-plugin-log-retention \
+    && serverless plugin install -n serverless-prune-plugin \
+    && serverless plugin install -n serverless-step-functions \
+    && serverless plugin install -n serverless-plugin-split-stacks \
+    && serverless plugin install -n serverless-plugin-aws-alerts \
+    && serverless plugin install -n serverless-plugin-tracing \
+    && npm cache clean --force
+
+# Copy and set up the deploy script
+COPY deploy.sh /usr/local/bin/deploy.sh
+RUN chmod +x /usr/local/bin/deploy.sh
+
+ENTRYPOINT ["/usr/local/bin/deploy.sh"]
